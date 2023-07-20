@@ -8,7 +8,6 @@ import os, json, requests, re, sys
 from datetime import datetime
 import pytz
 import smtplib
-import yagmail
 
 import email, ssl
 from email import encoders
