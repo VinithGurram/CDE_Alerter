@@ -17,9 +17,12 @@ def parse_args():
     parser.add_argument("cdp_user", type=str, help="enter the cdp workload user")
     parser.add_argument("cdp_password", type=str, help="enter the cdp workload password")
     parser.add_argument("smtp", type=str, help="enter the smtp server")
+    parser.add_argument("port", type=str, help="enter the smtp server port")
+    parser.add_argument("smtpusername_password", type=str, help="enter the smtp server username:password ")
     parser.add_argument("max_job_seconds", type=int, help="enter the max job duration in seconds to qualify a lagger job")
     parser.add_argument("email_sender", type=str, help="enter the notification email sender")
     #parser.add_argument("email_recipient", type=str, help="enter the notification email recipient")
+    parser.add_argument("env", type=str, help="enter the enter the env name")
     parser.add_argument("-v", "--verbose", action="store_true", help="increase output verbosity")
     args = vars(parser.parse_args())
 
@@ -36,7 +39,10 @@ def main():
     EMAIL_SENDER = args["email_sender"] #me@myco.com
     #EMAIL_RECIPIENT = args["email_recipient"] #mycolleague@myco.com
     SMTP = args["smtp"] #"mysmtphere"
-
+    PORT = args["port"]
+    SESSMTPUSERNAME=args["smtpusername_password"].split(":")[0]
+    SESSMTPPASSWORD=args["smtpusername_password"].split(":")[1]
+    ENV=args["env"]
     for CLUSTER in CLUSTERS:
     # Instantiate the Connection to CDE
 
@@ -56,7 +62,7 @@ def main():
         if len(laggers_df)>0:
             now = datetime.now(tz_LA)
             cde_vc_name = cde_connection.print_vc_meta(TOKEN)
-            cde_connection.smtplib_email_alert(laggers_df, job_duration_seconds, EMAIL_SENDER, EMAIL_RECIPIENT, SMTP, cde_vc_name)
+            cde_connection.smtplib_email_alert(laggers_df, job_duration_seconds, EMAIL_SENDER, EMAIL_RECIPIENT, SMTP, PORT, SESSMTPUSERNAME, SESSMTPPASSWORD, ENV, cde_vc_name)
             print("{} PACIFIC STANDARD TIME".format(now))
             print("Executing CDE Alerter for CDE Virtual Cluster {}".format(cde_vc_name))
             print("The CDE Alerter found at least one job taking longer than {} minutes".format(job_duration_seconds/60))

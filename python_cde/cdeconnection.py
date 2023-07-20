@@ -223,7 +223,7 @@ class CdeConnection:
         df['started'] = pd.to_datetime(df['started'], infer_datetime_format=True)
         df["timedelta"] = df['started'] - pd.Timestamp(now).to_datetime64()
         laggers_df = df[-df["timedelta"].dt.total_seconds() > MAX_JOB_DURATION_SECONDS]
-        laggers_df = laggers_df[(laggers_df["status"] == "running") | (laggers_df["status"] == "starting")] | (laggers_df["status"] == "preparing")]
+        laggers_df = laggers_df[(laggers_df["status"] == "running") | (laggers_df["status"] == "starting") | (laggers_df["status"] == "preparing")]
         laggers_df = laggers_df.reset_index()
 
         return laggers_df, MAX_JOB_DURATION_SECONDS
@@ -264,6 +264,38 @@ class CdeConnection:
 
         try:
            smtpObj = smtplib.SMTP(SMTP)
+           smtpObj.sendmail(sender, receiver, message.as_string())
+           print("Successfully sent email")
+
+        except smtplib.SMTPException:
+           print("Error: unable to send email")
+    def smtplib_email_alert(self, laggers_df, job_duration_seconds, sender, receiver, SMTP, PORT, SESSMTPUSERNAME, SESSMTPPASSWORD,env, cde_vc_name):
+
+        minutes = str(float(job_duration_seconds)/60)
+
+        subject = "CDE Alerter Warning - Potential Stuck Jobs Issue Found in {0} ,{1}".format(env,cde_vc_name)
+        body = ""
+
+        for i in range(len(laggers_df)):
+            body += """
+
+            Run ID {0} of CDE Job {1} owned by User {2} has run for more than {4} minutes and is now in {3} Status.
+
+            """.format(laggers_df['id'][i], laggers_df['job'][i], laggers_df['user'][i], laggers_df['status'][i], minutes)
+
+        # Create a multipart message and set headers
+        message = MIMEMultipart()
+        message["From"] = sender
+        message["To"] = receiver
+        message["Subject"] = subject
+
+        # Add body to email
+        message.attach(MIMEText(body, "plain"))
+
+        try:
+           smtpObj = smtplib.SMTP(SMTP,PORT)
+           smtpObj.starttls()
+           smtpObj.login(SESSMTPUSERNAME, SESSMTPPASSWORD)
            smtpObj.sendmail(sender, receiver, message.as_string())
            print("Successfully sent email")
 
